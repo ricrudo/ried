@@ -1,18 +1,18 @@
 from ried.note.note_generator import Note
 from ried.scale.scale_generator import Scale
-from ried.interval.interval_generator import Interval
+from ried.interval.interval_generator import Note_from_interval, Interval
 
 
 class ScaleRange:
 
     symbols = 'ABCDEFG#b'
     posible_modes = Scale.posible_modes
-    interval = Interval()
+    nt_from_int = Note_from_interval()
 
     def __init__(self, start, end=None, length=None, key=None, mode=None):
         self.start = self._check_note(start)
         self.end = self._check_note(end)
-        self.length = self._check_length(length)
+        self.interval = self._check_length(length)
         self.key = self._check_key(key)
         self.mode = self._check_mode(mode)
         self.range = [self.start]
@@ -25,9 +25,7 @@ class ScaleRange:
 
     def _check_length(self, value):
         if self.end:
-            inter = self.start ^ self.end
-            inter = int("".join([x for x in inter if x.isdigit()]))
-            return inter
+            return self.start ^ self.end
         if not isinstance(value, int):
             raise ValueError(f'{value} is not a valid length to create a range')
         return value
@@ -51,8 +49,7 @@ class ScaleRange:
         return 'ionian'
 
     def _generate_range(self):
-        self.direction = self._get_direction()
-        if self.direction:
+        if self.interval.direction:
             self._fill_range()
             self._trim_ends()
         else:
@@ -61,22 +58,22 @@ class ScaleRange:
 
     def _get_direction(self):
         if self.end:
+            direction
             if self.start < self.end: return 'up'
             if self.start > self.end: return 'down'
-        elif self.length > 1: return 'up'
-        elif self.length < 1: return 'down'
+        elif self.interval > 1: return 'up'
+        elif self.interval < 1: return 'down'
         return None
 
     def _fill_range(self):
-        if self.direction == 'up':
-            length = abs(self.length)
-            self.range = [Note(self.interval.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(length)]
-        elif self.direction == 'down':
-            length = abs(self.length) * -1
-            self.range = [Note(self.interval.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(0, length, -1)]
+        length = self.interval.interval + 1
+        if self.interval.direction == 'up':
+            self.range = [Note(self.nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(length)]
+        elif self.interval.direction == 'down':
+            self.range = [Note(self.nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(0, length * -1, -1)]
 
     def _trim_ends(self):
-        if self.direction == 'up':
+        if self.interval.direction == 'up':
             while self.start > self.range[0]: del self.range[0]
             while self.end < self.range[-1]: del self.range[-1]
         else:

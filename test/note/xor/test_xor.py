@@ -14,7 +14,8 @@ with open('test/note/xor/origen.csv') as f:
 def test_xor(inputNote, input2, response):
     note1 = Note(inputNote)
     note2 = Note(input2)
-    assert note1 ^ note2 == response
+    result = note1 ^ note2
+    assert result.intervalNotation == response
 
 
 

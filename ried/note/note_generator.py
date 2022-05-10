@@ -1,17 +1,73 @@
 from ried.notation import notation_analyzer
-from ried.interval.interval_generator import Interval
-from ried.interval.interval_identifier import Interval_Identifier
+from ried.interval.interval_generator import Note_from_interval, Interval
 
 from collections import namedtuple
 
-class Note:
+class Duration:
+
+    def __init__(self, duration, dots):
+        self._dot = dots and 0 < dots < 3 and dots or None
+        self.duration, self._graph_dur = duration and self._check_duration(duration) or None, None
+    
+    def _check_duration(self, duration):
+        if duration:
+            try:
+                return float(duration), self._check_64ths_factor(float(duration))
+            except ValueError:
+                try:
+                    value = self._check_64ths_factor(float(duration*2/3))
+                    self._dot = 1
+                    return float(duration), value
+                except ValueError:
+                    try:
+                        value = self._check_64ths_factor(float(duration*4/7))
+                        self._dot = 2
+                        return float(duration), value
+                    except:
+                        raise ValueError(f'"{duration}" is not a valid duration to create a Silence or Note')
+
+    def _check_64ths_factor(self, value):
+
+        if 1/64 > value or value > 8:
+            raise ValueError()
+        elif value == 1:
+            return value
+        elif value < 1:
+            m = 1/value
+        else:
+            m = value * 1
+            
+        while m > 2: m /= 2
+            
+        if m != 2:
+            raise ValueError()
+        return value
+
+    def set_duration(self, duration):
+        self._dot = None
+        self.duration, self._graph_dur = self._check_duration(duration)
+
+    def get_graph_duration(self):
+        return {'figure': self._graph_dur, 'dots': self._dot}
+
+class Silence(Duration):
+
+    def __init__(self, duration, dots=None):
+        super().__init__(duration, dots)
+        if not duration:
+            raise ValueError(f'"{duration} is not a valid duration to create a Silence"')
+
+    def __repr__(self):
+        return f'Silence(duration={self.duration})'
+
+
+class Note(Duration):
 
     nttnAnlzr = notation_analyzer.Note()
-    intrvl = Interval()
-    intvrl_idntfcd = Interval_Identifier()
+    intrvl = Note_from_interval()
     Beat_Position = namedtuple('BeatPosition', 'j8ths j16ths j32nds j64ths')
 
-    def __init__(self, name, octave='none', alter='none', duration='none', beat_position=None, key=None, mode=None, chord=None):
+    def __init__(self, name, octave='none', alter='none', duration=None, dots=None, joiner_pos=None, key=None, mode=None, chord=None):
         predata = self.nttnAnlzr.generator_note(name, octave, alter)
         self.name = predata['name']
         self.name_without_alter = predata['name_without_alter']
@@ -24,14 +80,16 @@ class Note:
         self.midi_number = predata['midi_number']
         self.solfeo_without_alter = predata['solfeo_without_alter']
         self.solfeo = predata['solfeo']
-        self.duration, self.relative_duration = duration != 'none'and self.set_duration(duration) or ('none','none') 
-        self.beat_position = beat_position and self.set_beatPosition(beat_position) or None
+        super().__init__(duration, dots) 
+        self.joiner_pos = joiner_pos and self.set_beatPosition(joiner_pos) or None
         self.key = self._setKey(key)
         self.mode = self._setMode(mode)
         self.chord = self._setChord(chord)
 
     def __repr__(self):
-        return f'Note(full_name={self.full_name})'
+        if not self.duration:
+            return f'Note(full_name={self.full_name})'
+        return f'Note(full_name={self.full_name}, duration={self.duration})'
 
     def _duration(self, duration):
         return 'none'
@@ -93,8 +151,12 @@ class Note:
                 interval = other[0]
             else:
                 raise ValueError(f'{other} is not allowed for addition')
+
         else:
-            interval = other
+            if isinstance(other, Interval.Interval):
+                interval = other.intervalNotation
+            else:
+                interval = other
             scale = self.key
                                
         result = self.intrvl.get_note_from_interval(self.full_name, interval, scale=scale)
@@ -146,9 +208,10 @@ class Note:
     def __xor__(self, other):
         if not isinstance(other, Note):
             raise ValueError(f'{other} is not a valid class Note')
-        return self.intvrl_idntfcd.identify_interval(self, other)['intervalName']
-
-
+        interval = Interval()
+        response = interval.identify_interval(self, other)
+        del interval
+        return response
 
     def equalPitch(self, other):
         if all([x != 'none' for x in (self.midi_number, other.midi_number)]):
