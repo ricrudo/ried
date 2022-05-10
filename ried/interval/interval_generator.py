@@ -81,18 +81,17 @@ class Note_from_interval(Interval_Analysis, Scale):
         return end
 
 
-
 class Interval(Scale):
 
     perf_intervals = (0, 3, 4)
-    Interval = namedtuple('Interval', 'intervalNotation closedOctNotation interval octave alteration direction ')
+    Interval = namedtuple('Interval', 'intervalNotation closedOctNotation steps octaves alterations direction')
 
     def identify_interval(self, start, end):
         '''
-        Returns a dict {'intervalName', 'interval', 'octave', 'mod', 'direction'}
+        Returns a namedtuple('Interval', 'intervalNotation closedOctNotation steps octaves alterations direction')
         '''
         self._check_inputs(start, end)
-        predata = {'intervalName': None, 'interval': None, 'octave': 0, 'mod': None, 'direction': None}
+        predata = {'intervalName': None, 'steps': None, 'octave': 0, 'mod': None, 'direction': None}
         self._get_direction_and_octave(start, end, predata)
         lowest, highest = self._get_lowest_highest(start, end, predata)
         scaleReference = self.generate_scale(lowest.full_name, dots=False)
@@ -102,11 +101,11 @@ class Interval(Scale):
         return self._gen_IntervalNamedTupled(predata)
 
         self._get_actual_octave(predata, lowest, highest)
-        predata['interval'] = predata['interval'] > 0 and predata['direction'] == 'down' and predata['interval'] * -1 or predata['interval']
+        predata['steps'] = predata['steps'] > 0 and predata['direction'] == 'down' and predata['steps'] * -1 or predata['steps']
         return predata
 
     def _gen_IntervalNamedTupled(self, predata):
-        return self.Interval(predata['intervalName'], predata['closedOctNotation'], predata['interval'], predata['octave'], predata['mod'], predata['direction'])
+        return self.Interval(predata['intervalName'], predata['closedOctNotation'], predata['steps'], predata['octave'], predata['mod'], predata['direction'])
 
     def _check_inputs(self, start, end):
         if not hasattr(start, 'midi_number'):
@@ -129,7 +128,7 @@ class Interval(Scale):
         '''
         for i, note in enumerate(scaleReference):
             if note[0] == highest.name_without_alter:
-                predata['interval'] = i
+                predata['steps'] = i
                 predata['quantity'] = i+1
                 alter = note.count('#') - note.count('b')
                 mod = highest.alter - alter
@@ -137,15 +136,15 @@ class Interval(Scale):
                 if mod > 0:
                     predata['quality'] = f'{"a"*mod}'
                 elif mod == 0:
-                    if predata['interval'] in self.perf_intervals:
+                    if predata['steps'] in self.perf_intervals:
                         predata['quality'] = 'p'
                     else:
                         predata['quality'] = 'M'
-                elif mod == -1 and predata['interval'] not in self.perf_intervals:
+                elif mod == -1 and predata['steps'] not in self.perf_intervals:
                     predata['quality'] = 'm'
                 else:
                     predata['quality'] = f'{"d"*abs(mod)}'
-                    if predata['interval'] not in self.perf_intervals:
+                    if predata['steps'] not in self.perf_intervals:
                         predata['quality'] = predata['quality'][:-1]
                 return
 
@@ -199,11 +198,10 @@ class Interval(Scale):
         Deletes predata['quantity'] and predata['quality']
         '''
         symbol = predata['direction'] == 'down' and '-' or ''
+        predata['steps'] *= predata['direction'] == 'up' and 1 or -1
+
         if predata['octave'] != 0:
             quantity = (7 * abs(predata['octave'])) + predata['quantity']
-            if predata['direction'] == 'down':
-                quantity *= -1
-                predata['interval'] *= -1
             predata['intervalName'] = f'{symbol}{quantity}{predata["quality"]}'
         else:
             predata['intervalName'] = f'{symbol}{predata["quantity"]}{predata["quality"]}'
@@ -218,7 +216,7 @@ class Interval(Scale):
         if predata['direction'] == 'up':
             return
         if predata['mod'] == 0:
-            if predata['interval'] in self.perf_intervals:
+            if predata['steps'] in self.perf_intervals:
                 return
             predata['mod'] = -1
             return
@@ -227,7 +225,7 @@ class Interval(Scale):
             return
         if predata['mod'] < 0:
             predata['mod'] *= -1
-            if predata['interval'] in self.perf_intervals:
+            if predata['steps'] in self.perf_intervals:
                 return
             predata['mod'] -= 1
             return

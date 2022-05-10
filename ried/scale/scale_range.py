@@ -66,7 +66,7 @@ class ScaleRange:
         return None
 
     def _fill_range(self):
-        length = self.interval.interval + 1
+        length = abs(self.interval.steps + (7 * self.interval.octaves)) + 1
         if self.interval.direction == 'up':
             self.range = [Note(self.nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(length)]
         elif self.interval.direction == 'down':
