@@ -5,29 +5,31 @@ from collections import namedtuple
 
 class Duration:
 
-    def __init__(self, duration, dots):
-        self._dot = dots and 0 < dots < 3 and dots or None
-        self.duration, self._graph_dur = duration and self._check_duration(duration) or None, None
-    
-    def _check_duration(self, duration):
+    def __init__(self, duration):
         if duration:
+            self.set_duration(duration)
+        else:
+            self.duration, self._graph_dur = None, None
+    
+    def _gen_graph_duration(self, duration):
+        if duration:
+            self._dot = 0
             try:
-                return float(duration), self._check_64ths_factor(float(duration))
+                return self._check_64ths_factor(float(duration))
             except ValueError:
                 try:
-                    value = self._check_64ths_factor(float(duration*2/3))
                     self._dot = 1
-                    return float(duration), value
+                    return self._check_64ths_factor(float(duration*2/3))
                 except ValueError:
                     try:
                         value = self._check_64ths_factor(float(duration*4/7))
                         self._dot = 2
-                        return float(duration), value
+                        return self._check_64ths_factor(float(duration*4/7))
                     except:
                         raise ValueError(f'"{duration}" is not a valid duration to create a Silence or Note')
+    
 
     def _check_64ths_factor(self, value):
-
         if 1/64 > value or value > 8:
             raise ValueError()
         elif value == 1:
@@ -44,16 +46,17 @@ class Duration:
         return value
 
     def set_duration(self, duration):
-        self._dot = None
-        self.duration, self._graph_dur = self._check_duration(duration)
+        if duration:
+            self._graph_dur = self._gen_graph_duration(duration)
+            self.duration = float(duration) 
 
     def get_graph_duration(self):
         return {'figure': self._graph_dur, 'dots': self._dot}
 
 class Silence(Duration):
 
-    def __init__(self, duration, dots=None):
-        super().__init__(duration, dots)
+    def __init__(self, duration):
+        super().__init__(duration)
         if not duration:
             raise ValueError(f'"{duration} is not a valid duration to create a Silence"')
 
@@ -67,7 +70,7 @@ class Note(Duration):
     intrvl = Note_from_interval()
     Beat_Position = namedtuple('BeatPosition', 'j8ths j16ths j32nds j64ths')
 
-    def __init__(self, name, octave='none', alter='none', duration=None, dots=None, joiner_pos=None, key=None, mode=None, chord=None):
+    def __init__(self, name, octave='none', alter='none', duration=None, joiner_pos=None, key=None, mode=None, chord=None):
         predata = self.nttnAnlzr.generator_note(name, octave, alter)
         self.name = predata['name']
         self.name_without_alter = predata['name_without_alter']
@@ -80,7 +83,7 @@ class Note(Duration):
         self.midi_number = predata['midi_number']
         self.solfeo_without_alter = predata['solfeo_without_alter']
         self.solfeo = predata['solfeo']
-        super().__init__(duration, dots) 
+        super().__init__(duration) 
         self.joiner_pos = joiner_pos and self.set_beatPosition(joiner_pos) or None
         self.key = self._setKey(key)
         self.mode = self._setMode(mode)
