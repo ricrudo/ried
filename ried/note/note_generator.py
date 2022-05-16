@@ -5,32 +5,33 @@ from collections import namedtuple
 
 class Duration:
 
-    def __init__(self, duration):
+    def __init__(self, duration, dots):
+        self._dot = dots and 0 < dots < 3 and dots or None
         if duration:
-            self.set_duration(duration)
+            self.duration, self._graph_dur = self._check_duration(duration)
         else:
             self.duration, self._graph_dur = None, None
     
-    def _gen_graph_duration(self, duration):
+    def _check_duration(self, duration):
         if duration:
-            self._dot = 0
             try:
-                return self._check_64ths_factor(float(duration))
+                return float(duration), self._check_64ths_factor(float(duration))
             except ValueError:
                 try:
+                    value = self._check_64ths_factor(float(duration*2/3))
                     self._dot = 1
-                    return self._check_64ths_factor(float(duration*2/3))
+                    return float(duration), value
                 except ValueError:
                     try:
                         value = self._check_64ths_factor(float(duration*4/7))
                         self._dot = 2
-                        return self._check_64ths_factor(float(duration*4/7))
+                        return float(duration), value
                     except:
                         raise ValueError(f'"{duration}" is not a valid duration to create a Silence or Note')
-    
 
     def _check_64ths_factor(self, value):
-        if 1/64 > value or value > 8:
+
+        if 4/64 > value or value > 8:
             raise ValueError()
         elif value == 1:
             return value
@@ -46,17 +47,16 @@ class Duration:
         return value
 
     def set_duration(self, duration):
-        if duration:
-            self._graph_dur = self._gen_graph_duration(duration)
-            self.duration = float(duration) 
+        self._dot = None
+        self.duration, self._graph_dur = self._check_duration(duration)
 
     def get_graph_duration(self):
         return {'figure': self._graph_dur, 'dots': self._dot}
 
 class Silence(Duration):
 
-    def __init__(self, duration):
-        super().__init__(duration)
+    def __init__(self, duration, dots=None):
+        super().__init__(duration, dots)
         if not duration:
             raise ValueError(f'"{duration} is not a valid duration to create a Silence"')
 
@@ -70,7 +70,7 @@ class Note(Duration):
     intrvl = Note_from_interval()
     Beat_Position = namedtuple('BeatPosition', 'j8ths j16ths j32nds j64ths')
 
-    def __init__(self, name, octave='none', alter='none', duration=None, joiner_pos=None, key=None, mode=None, chord=None):
+    def __init__(self, name, octave='none', alter='none', duration=None, dots=None, joiner_pos=None, key=None, mode=None, chord=None, centralLine=None):
         predata = self.nttnAnlzr.generator_note(name, octave, alter)
         self.name = predata['name']
         self.name_without_alter = predata['name_without_alter']
@@ -83,11 +83,13 @@ class Note(Duration):
         self.midi_number = predata['midi_number']
         self.solfeo_without_alter = predata['solfeo_without_alter']
         self.solfeo = predata['solfeo']
-        super().__init__(duration) 
+        super().__init__(duration, dots) 
         self.joiner_pos = joiner_pos and self.set_beatPosition(joiner_pos) or None
         self.key = self._setKey(key)
         self.mode = self._setMode(mode)
         self.chord = self._setChord(chord)
+        self.pos = self._set_line_pos(centralLine)
+        self.aditional_line = self._set_additional_line()
 
     def __repr__(self):
         if not self.duration:
@@ -241,3 +243,24 @@ class Note(Duration):
         '''
         return Beat_Position(j8ths, j16ths, j32nds, j64ths)
 
+
+    def _set_line_pos(self, centralLine):
+        if centralLine and isinstance(centralLine, Note):
+            if self.octave != 'none':
+                distance = centralLine ^ self
+                distance = (distance.octaves * 7) + distance.steps
+                return distance
+        return None
+
+    def set_line_pos(self, centralLine):
+        self.pos = self._set_line_pos(centralLine)
+        self.aditional_line = self._set_additional_line()
+
+    def _set_additional_line(self):
+        if self.pos:
+            if abs(self.pos) < 6:
+                return None
+            aditional = (abs(self.pos) - 4) // 2
+            if self.pos < 0:
+                aditional *= -1
+            return aditional
