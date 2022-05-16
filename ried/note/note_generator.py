@@ -7,7 +7,10 @@ class Duration:
 
     def __init__(self, duration, dots):
         self._dot = dots and 0 < dots < 3 and dots or None
-        self.duration, self._graph_dur = duration and self._check_duration(duration) or None, None
+        if duration:
+            self.duration, self._graph_dur = self._check_duration(duration)
+        else:
+            self.duration, self._graph_dur = None, None
     
     def _check_duration(self, duration):
         if duration:
@@ -28,7 +31,7 @@ class Duration:
 
     def _check_64ths_factor(self, value):
 
-        if 1/64 > value or value > 8:
+        if 4/64 > value or value > 8:
             raise ValueError()
         elif value == 1:
             return value
@@ -67,7 +70,7 @@ class Note(Duration):
     intrvl = Note_from_interval()
     Beat_Position = namedtuple('BeatPosition', 'j8ths j16ths j32nds j64ths')
 
-    def __init__(self, name, octave='none', alter='none', duration=None, dots=None, joiner_pos=None, key=None, mode=None, chord=None):
+    def __init__(self, name, octave='none', alter='none', duration=None, dots=None, joiner_pos=None, key=None, mode=None, chord=None, centralLine=None):
         predata = self.nttnAnlzr.generator_note(name, octave, alter)
         self.name = predata['name']
         self.name_without_alter = predata['name_without_alter']
@@ -85,6 +88,8 @@ class Note(Duration):
         self.key = self._setKey(key)
         self.mode = self._setMode(mode)
         self.chord = self._setChord(chord)
+        self.pos = self._set_line_pos(centralLine)
+        self.aditional_line = self._set_additional_line()
 
     def __repr__(self):
         if not self.duration:
@@ -238,3 +243,24 @@ class Note(Duration):
         '''
         return Beat_Position(j8ths, j16ths, j32nds, j64ths)
 
+
+    def _set_line_pos(self, centralLine):
+        if centralLine and isinstance(centralLine, Note):
+            if self.octave != 'none':
+                distance = centralLine ^ self
+                distance = (distance.octaves * 7) + distance.steps
+                return distance
+        return None
+
+    def set_line_pos(self, centralLine):
+        self.pos = self._set_line_pos(centralLine)
+        self.aditional_line = self._set_additional_line()
+
+    def _set_additional_line(self):
+        if self.pos:
+            if abs(self.pos) < 6:
+                return None
+            aditional = (abs(self.pos) - 4) // 2
+            if self.pos < 0:
+                aditional *= -1
+            return aditional
