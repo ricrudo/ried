@@ -83,7 +83,6 @@ class Beat:
             response = self._define_groups(value, joiners['silence'])
             self._joiners_to_notes(key, response)
         del joiners
-        breakpoint()
 
 
     def _mk_joiners_by_figure(self):
