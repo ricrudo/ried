@@ -4,10 +4,13 @@ from typing import Union
 
 class Beat:
 
-    def __init__(self, pattern, content=None, bar_position=None, clef=None, centralLine=None):
+    def __init__(self, pattern, content=None, bar_position=None, clef=None, centralLine=None, bar_subdivision=None):
         self.clef = clef
-        self.centralLine =centralLine
+        self.centralLine = centralLine
+        self.bar_subdivision = bar_subdivision
+        self.bar_position = bar_position
         self.pattern = self._check_pattern(pattern)
+        self.silence_in_between = False
         self.content = self.pairing_content_pattern(content)
         self._set_joiners()
 
@@ -80,10 +83,12 @@ class Beat:
                 continue
             if not value:
                 continue
-            response = self._define_groups(value, joiners['silence'])
+            response = self._define_groups(value, joiners['silence'][key])
+            response = self._unique_joiner(response)
+            response = self._clean_joiner(response)
+            self._check_silence_between(response, joiners['silence'][key])
             self._joiners_to_notes(key, response)
         del joiners
-
 
     def _mk_joiners_by_figure(self):
         joiners = {}
@@ -93,8 +98,19 @@ class Beat:
         joiners['join32ths'] = [i for i, x in enumerate(self.pattern) if 0.25 > x > 0]
         joiners['join64ths'] = [i for i, x in enumerate(self.pattern) if 0.125 > x > 0]
         joiners['join128ths'] = [i for i, x in enumerate(self.pattern) if 0.0625 > x > 0]
-        joiners['silence'] = [i for i, x in enumerate(self.pattern) if x < 0]
+        joiners['silence'] = self._silence_arranged()
+
         return joiners
+
+    def _silence_arranged(self):
+        silences = {}
+        silences['noJoin'] =  [i for i, x in enumerate(self.pattern) if x <= -1]
+        silences['join8ths'] = [i for i, x in enumerate(self.pattern) if -0.5 >= x > -1]
+        silences['join16ths'] = [i for i, x in enumerate(self.pattern) if -0.25 >= x > -0.5]
+        silences['join32ths'] = [i for i, x in enumerate(self.pattern) if -0.125 >= x > -0.25]
+        silences['join64ths'] = [i for i, x in enumerate(self.pattern) if -0.0625 >= x > -0.125]
+        silences['join128ths'] = [i for i, x in enumerate(self.pattern) if 0 > x > -0.0625]
+        return silences
 
     def _define_groups(self, value, silences):
         if all(list(map(lambda x: x-1 == value[value.index(x) - 1], value[1:]))):
@@ -109,7 +125,6 @@ class Beat:
             index = value[0] + 1
             while index <= value[-1]:
                 if not index in value and not index in silences:
-                #if not index in value:
                     if groups[-1]:
                         groups[-1].append(index-1)
                         groups.append([])
@@ -131,22 +146,67 @@ class Beat:
         return response
 
     def _joiners_to_notes(self, key, response):
+        if 'unique' in response:
+            for place, indexList in response['unique'].items():
+                if indexList:
+                    for index in indexList:
+                        if not hasattr(self.content[index], 'joiner'):
+                            self.content[index].joiner = {}
+                        self.content[index].joiner[key] = place
         for starter in response['start']:
             if not hasattr(self.content[starter], 'joiner'):
                 self.content[starter].joiner = {}
-            if not key in self.content[starter].joiner:
-                self.content[starter].joiner[key] = []
-            self.content[starter].joiner[key].append('start')
+            self.content[starter].joiner[key] = 'start'
         for grupos in response['middle']:
             for index in grupos:
                 if not hasattr(self.content[index], 'joiner'):
                     self.content[index].joiner = {}
-                self.content[index].joiner[key] = ['middle']
+                self.content[index].joiner[key] = 'middle'
         for ender in response['end']:
             if not hasattr(self.content[ender], 'joiner'):
                 self.content[ender].joiner = {}
-            if not key in self.content[ender].joiner:
-                self.content[ender].joiner[key] = []
-            self.content[ender].joiner[key].append('end')
+            self.content[ender].joiner[key] = 'end'
 
+    def _unique_joiner(self, response):
+        if all([x in response for x in ('start', 'end')]):
+            for x in response['start']:
+                if x in response['end']:
+                    if 'unique' not in response:
+                        response['unique'] = {'unique_start': [], 'unique_end':[]}
+                    if not hasattr(self, 'subdivision_pairs'):
+                        self._gen_subdivision_pairs()
+                    if x in self.subdivision_pairs['start']:
+                        response['unique']['unique_start'].append(x)
+                    elif x in self.subdivision_pairs['end']:
+                        response['unique']['unique_end'].append(x)
+        return response
+    
+    def _clean_joiner(self, response):
+        if 'unique' in response:
+            for value in response['unique'].values():
+                for index in value:
+                    response['start'].remove(index)
+                    response['end'].remove(index)
+        return response
+
+    def _gen_subdivision_pairs(self):
+        size_beat = self.bar_subdivision.beat_grouping[self.bar_position] * (4/self.bar_subdivision.figure_subidivision)
+        self.subdivision_pairs = {'start':[0], 'end':[len(self.pattern)-1]}
+        avance = 0
+        for i, x in enumerate(self.pattern):
+            if i == 0 or i == len(self.pattern) - 1:
+                avance += abs(x)
+                continue
+            if avance % (4 / self.bar_subdivision.figure_subidivision) == 0:
+                self.subdivision_pairs['start'].append(i)
+            else:
+                self.subdivision_pairs['end'].append(i)
+            avance += abs(x)
+
+    def _check_silence_between(self, response, silences):
+        if not self.silence_in_between:
+            for x in silences:
+                if any([x > s for s in response['start']]):
+                    if any([x < e for e in response['end']]):
+                        self.silence_in_between = True
 

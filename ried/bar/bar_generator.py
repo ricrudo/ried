@@ -187,7 +187,7 @@ class Bar(Measure):
     def _create_beats(self):
         response = [] 
         if self.content and self.distribution:
-            for i, beat in enumerate(self.distribution, 1):
+            for i, beat in enumerate(self.distribution):
                 sounds = []
                 for tick in beat: 
                     if tick > 0:
@@ -195,7 +195,7 @@ class Bar(Measure):
                             sounds.append(self.content.pop(0))
                         except IndexError:
                             raise IndexError(f'There is not enough content for the distribution entered')
-                response.append(Beat(content=sounds, bar_position=i, pattern=beat, clef=self.clef, centralLine=self.centralLine))
+                response.append(Beat(content=sounds, bar_position=i, pattern=beat, clef=self.clef, centralLine=self.centralLine, bar_subdivision=self.subdivision))
             return response
         return self.content
 
