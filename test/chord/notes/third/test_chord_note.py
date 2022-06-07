@@ -1,6 +1,6 @@
 import pytest
 
-from ried.chord.chord_generator import Chord
+from ried.chord.chord_generator import Chord_symbol
 
 import csv
 
@@ -12,7 +12,7 @@ with open('test/chord/notes/third/origen.csv') as f:
         origen#[30000:]
         )
 def test_add(inputNote, response3, response4, response5, response6, response7, response9, response11, response13):
-    NewChord = Chord(inputNote)
+    NewChord = Chord_symbol(inputNote)
     if NewChord.third:
         assert NewChord.third.name == response3
     else:

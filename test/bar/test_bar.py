@@ -246,4 +246,24 @@ def test_bar5():
                                 assert value == contenido.content[pulso].content[index].joiner[key]
             except:
                 breakpoint()
-            
+
+
+
+##############################
+
+
+def test_bar_6():
+    compas = Bar('2-4', content=['A3', 'B4', 'C5'], subdivision='distribution', distribution=[[-1], [0.25, 0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'up'
+    compas = Bar('2-4', content=['A4', 'B4', 'E5'], subdivision='distribution', distribution=[[-1], [0.25, 0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'down'
+    compas = Bar('2-4', content=['F4', 'B4', 'E5'], subdivision='distribution', distribution=[[-1], [0.25, 0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'up'
+    compas = Bar('2-4', content=['F4', 'B4', 'A5'], subdivision='distribution', distribution=[[-1], [0.25, 0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'down'
+    compas = Bar('2-4', content=['F4', 'E5'], subdivision='distribution', distribution=[[-1], [0.25, -0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'up'
+    compas = Bar('2-4', content=['E4', 'E5'], subdivision='distribution', distribution=[[-1], [0.25, -0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'up'
+    compas = Bar('2-4', content=['G4', 'E5'], subdivision='distribution', distribution=[[-1], [0.25, -0.5, 0.25]])
+    assert compas.content[1].beam_direction == 'down'

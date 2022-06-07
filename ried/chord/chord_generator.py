@@ -1,7 +1,7 @@
 from ried.notation import notation_analyzer
 from ried.note.note_generator import Note
 
-class Chord:
+class Chord_symbol:
 
     nttnAnlzr = notation_analyzer.Chord()
     
@@ -124,3 +124,69 @@ class Chord:
                 elif x == '#13': thirteenth.append(self.root + '6a')
             return thirteenth
 
+
+class Chord:
+
+    def __init__(self, content, lowestNote=None, highestNote=None, position=None, duration=None, centralLine=None):
+        '''
+        content puede ser: list/tuple con varias Note(), list/tuple con str note ('Ab4', 'F4', 'D3'), or Chord_symbol()
+        lowestNote and highestNote: Puede ser Note() or str note si ambas omite position y crea una posición distribuída equitativamente, si solo una forma la posición en dirección ascendente o descendente respectivamente
+        position: puede ser 'close', 'semiopen' 'open' 'drop2' 'drop3' 'drop2-4', 'spread', 'target-chromatic', 'target-diatonic' 'target-dominant' 'target-diminished' 
+        '''
+        self.lowestNote, self.highestNote = self._set_borders(lowestNote, highestNote)
+        self.content = self._set_content(content, duration, centralLine)
+        self.position = self._set_position(position)
+
+    def __repr__(self):
+        return f'Chord({self.content})'
+
+    def _set_borders(self, lowestNote, highestNote):
+        '''
+        return a tuple of Note() or None to each value, in the order lowestNote, highestNote
+        '''
+        if not lowestNote and not highestNote:
+            return None, None
+        if not lowestNote:
+            lowestNote = None
+        elif not isinstance(lowestNote, Note):
+                lowestNote = Note(lowestNote)
+        if not highestNote:
+            highestNote = None
+        elif not isinstance(highestNote, Note):
+                highestNote = Note(highestNote)
+        if lowestNote > highestNote:
+            lowestNote, highestNote = highestNote, lowestNote
+        return lowestNote, highestNote
+
+    def _set_content(self, content, duration, centralLine):
+        '''
+        return a list of Note() from bottom to top
+        C = [Note('C'), Note('E'), Note('G')]
+        '''
+        if isinstance(content, (tuple, list)):
+            error = [x for x in content if not isinstance(x, (str, Note))]
+            if error:
+                raise ValueError(f'{error} contains not valid elements to create a Chord()')
+            note = [Note(x, duration=duration, centralLine=centralLine) for x in content if isinstance(x, str)]
+            note.extend([x for x in content if isinstance(x, Note)])
+            return sorted(note)
+        elif isinstance(content, Chord_symbol):
+            raise(f'Ried Calculation is not able to crete chords from Chord_symbol, yet')
+
+    def _set_position(self, position):
+        '''''
+        return a tuple of Interval in the order from bottom to top of the distance bewteen Chord notes. If both self.lowestNote and self.highestNote
+        have values, ommit the variable position and try to create a homogeneous distribution
+        '''
+
+        pass
+
+    def set_duration(self, duration):
+        for note in self.content:
+            note.set_duration(duration)
+        self.duration = note.duration
+
+    def set_line_pos(self, centralLine):
+        for note in self.content:
+            note.set_line_pos(centralLine)
+        self.centralLine = centralLine

@@ -32,8 +32,9 @@ class ScaleRange:
 
     def _check_key(self, value):
         if value:
-            if value not in self.symbols:
-                raise ValueError(f'{value} is not a valid key to create a range')
+            for x in value:
+                if x not in self.symbols:
+                    raise ValueError(f'{value} is not a valid key to create a range')
             return value
         if self.start.key:
             return self.start.key

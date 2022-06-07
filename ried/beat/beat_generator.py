@@ -1,4 +1,6 @@
 from ried.note.note_generator import Note, Silence
+from ried.chord.chord_generator import Chord
+
 import copy
 from typing import Union
 
@@ -13,6 +15,7 @@ class Beat:
         self.silence_in_between = False
         self.content = self.pairing_content_pattern(content)
         self._set_joiners()
+        self.beam_direction = self._set_beam_direction()
 
     def __repr__(self):
         if self.content:
@@ -60,11 +63,13 @@ class Beat:
     def _pairing(self, content):
         for i, duration in enumerate(self.pattern):
             if duration > 0:
-                if not isinstance(content[i], Note):
-                    if centralLine:
-                        content[i] = Note(content[i], duration=duration, centralLine=centralLine)
+                if not isinstance(content[i], (Note, Chord)):
+                    if isinstance(content[i], str):
+                        content[i] = Note(content[i], duration=duration, centralLine=self.centralLine)
+                    elif isinstance(content[i], (list, tuple)):
+                        content[i] = Chord(content=content[i], duration=duration, centralLine=self.centralLine)
                     else:
-                        content[i] = Note(content[i], duration=duration)
+                        raise ValueError(f'{content[i]} in not valid to create a Note() or Chord()')
                 else:
                     content[i].set_duration(duration)
                     content[i].set_line_pos(self.centralLine)
@@ -84,10 +89,11 @@ class Beat:
             if not value:
                 continue
             response = self._define_groups(value, joiners['silence'][key])
-            response = self._unique_joiner(response)
-            response = self._clean_joiner(response)
-            self._check_silence_between(response, joiners['silence'][key])
+            if key != 'join8ths':
+                response = self._unique_joiner(response)
+            response = self._clean_joiner(response, key)
             self._joiners_to_notes(key, response)
+        self._check_silence_between()
         del joiners
 
     def _mk_joiners_by_figure(self):
@@ -113,7 +119,7 @@ class Beat:
         return silences
 
     def _define_groups(self, value, silences):
-        if all(list(map(lambda x: x-1 == value[value.index(x) - 1], value[1:]))):
+        if all(list(map(lambda x: x-1 == value[value.index(x) - 1], value[1:]))):# or not silences:
             response = {'start':[value[0]]}
             if len(value) > 1:
                 response['middle'] = [[x for x in range(value[1], value[-1])]]
@@ -124,7 +130,7 @@ class Beat:
             groups = [[value[0]]]
             index = value[0] + 1
             while index <= value[-1]:
-                if not index in value and not index in silences:
+                if not index in value:# and index in silences:
                     if groups[-1]:
                         groups[-1].append(index-1)
                         groups.append([])
@@ -181,7 +187,28 @@ class Beat:
                         response['unique']['unique_end'].append(x)
         return response
     
-    def _clean_joiner(self, response):
+    def _clean_joiner(self, response, key):
+        if key == 'join8ths' and isinstance(response['start'], set) and isinstance(response['end'], set):
+            if 'middle' in response:
+                for i, x in enumerate(response['middle']):
+                    if not x:
+                        del response['middle'][i]
+            response['end'].discard(min(response['start']))
+            response['start'].discard(max(response['end']))
+            while len(response['start']) > len(response['end']):
+                if 'middle' in response:
+                    if response['middle']:
+                        response['middle'][-1].append(max(response['start']))
+                    else:
+                        response['middle'].append([max(response['start'])])
+                response['start'].remove(max(response['start']))
+            while len(response['start']) < len(response['end']):
+                if 'middle' in response:
+                    if response['middle']:
+                        response['middle'][-1].append(min(response['end']))
+                    else:
+                        response['middle'].append([min(response['end'])])
+                response['end'].remove(min(response['end']))
         if 'unique' in response:
             for value in response['unique'].values():
                 for index in value:
@@ -203,10 +230,43 @@ class Beat:
                 self.subdivision_pairs['end'].append(i)
             avance += abs(x)
 
-    def _check_silence_between(self, response, silences):
-        if not self.silence_in_between:
-            for x in silences:
-                if any([x > s for s in response['start']]):
-                    if any([x < e for e in response['end']]):
-                        self.silence_in_between = True
+    def _check_silence_between(self):
+        silences = [i for i, x in enumerate(self.pattern) if x < 0]
+        if not silences:
+            return
+        for x in silences:
+            pre = [x for x in self.pattern[:x] if x > 0]
+            pos = [x for x in self.pattern[x:] if x > 0]
+            if pre and pos:
+                self.silence_in_between = True
+                return
 
+    def _set_beam_direction(self):
+        sorte = []
+        for x in self.content:
+            if isinstance(x, Note) and x.duration < 4:
+                inter = self.centralLine ^ x
+                sorte.append(inter.steps + (inter.octaves*7))
+            elif isinstance(x, Chord) and x.duration < 4:
+                for note in x.content:
+                    inter = self.centralLine ^ note
+                    sorte.append(inter.steps + (inter.octaves*7))
+        if not sorte:
+            return None
+        self.border_notes = {'lowest': min(sorte), 'highest': max(sorte)}
+        beam_up = [abs(x) for x in sorte if x <= 0]
+        beam_down = [x for x in sorte if x > 0]
+        if beam_up and not beam_down:
+            return 'up'
+        elif beam_down and not beam_up:
+            return 'down'
+        elif beam_up and beam_down:
+            if max(beam_up) > max(beam_down):
+                return 'up'
+            elif max(beam_up) < max(beam_down):
+                return 'down'
+            elif len(beam_up) >= len(beam_down):
+                return 'up'
+            elif len(beam_up) < len(beam_down):
+                return 'down'
+        return None

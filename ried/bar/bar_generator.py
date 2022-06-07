@@ -1,5 +1,6 @@
 from ried.note.note_generator import Note
 from ried.beat.beat_generator import Beat
+from ried.chord.chord_generator import Chord
 
 from collections import namedtuple
 import copy
@@ -172,10 +173,12 @@ class Bar(Measure):
             if isinstance(content, tuple):
                 content = list(content)
             for i, x in enumerate(content):
-                if not isinstance(x, (Beat, Note, str)):
+                if not isinstance(x, (Beat, Note, str, Chord, list, tuple)):
                     raise ValueError(f'{x} is not a valid Beat to put into a Bar')
                 elif isinstance(x, str):
                     content[i] = Note(x)
+                elif isinstance(x, (list, tuple)):
+                    content[i] = Chord(content=x)
             for i, first in enumerate(content):
                 for other in range(i+1, len(content)):
                     if content[other] is first:
@@ -220,13 +223,13 @@ class Bar(Measure):
 
     def _add_distribution(self, distribution):
         if distribution:
-            if not self.content or all([isinstance(x, Note) for x in self.content]):
+            if not self.content or all([isinstance(x, (Note, Chord)) for x in self.content]):
                 if self._check_distribution(distribution) == 'tuple': 
                     if len(distribution) != len(self.subdivision.beat_grouping):
                         raise IndexError('This amount of beats admitted in this bar and the value in "distribution" do not correspond')
                     distribution = tuple([tuple([x for x in group]) for group in distribution])
                     return self._convert_distribution(distribution)
-            if not self.content or all([isinstance(x, Beat) for x in self.content]):
+            if not self.content or all([isinstance(x, (Beat, Chord)) for x in self.content]):
                 if self._check_distribution(distribution) != 'string': 
                     raise ValueError(f'distribution="{distribution}" is not valid when content is not specified. If you insert a tuple with only one element, you need a "," to be a accepted tuple format. i.e. (1,)')
                 return distribution
