@@ -5,9 +5,9 @@ from ried.interval.interval_generator import Note_from_interval, Interval
 
 class ScaleRange:
 
-    symbols = 'ABCDEFG#b'
-    posible_modes = Scale.posible_modes
-    nt_from_int = Note_from_interval()
+    _symbols = 'ABCDEFG#b'
+    _posible_modes = Scale.posible_modes
+    _nt_from_int = Note_from_interval()
 
     def __init__(self, start, end=None, length=None, key=None, mode=None):
         self.start = self._check_note(start)
@@ -17,6 +17,9 @@ class ScaleRange:
         self.mode = self._check_mode(mode)
         self.range = [self.start]
         self._generate_range()
+    
+    def __repr__(self):
+        return f'ScaleRange(start={self.start.full_name}, end={self.end.full_name}, key={self.key}, mode={self.mode})'
 
     def _check_note(self, value):
         if value and not isinstance(value, Note):
@@ -26,14 +29,21 @@ class ScaleRange:
     def _check_length(self, value):
         if self.end:
             return self.start ^ self.end
+        elif not value:
+            raise ValueError('any of the parameters "end" or "lenght" has to be declared')
         if not isinstance(value, int):
             raise ValueError(f'{value} is not a valid length to create a range')
-        return value
+        if value > 0:
+            value -= 1
+        else:
+            value + 1
+        self.end = self.start + value
+        return self.start ^ self.end
 
     def _check_key(self, value):
         if value:
             for x in value:
-                if x not in self.symbols:
+                if x not in self._symbols:
                     raise ValueError(f'{value} is not a valid key to create a range')
             return value
         if self.start.key:
@@ -42,7 +52,7 @@ class ScaleRange:
 
     def _check_mode(self, value):
         if value:
-            if value not in self.posible_modes:
+            if value not in self._posible_modes:
                 raise ValueError(f'{value} is not a valid mode to create a range')
             return value
         if self.start.mode:
@@ -69,9 +79,9 @@ class ScaleRange:
     def _fill_range(self):
         length = abs(self.interval.steps + (7 * self.interval.octaves)) + 1
         if self.interval.direction == 'up':
-            self.range = [Note(self.nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(length)]
+            self.range = [Note(self._nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(length)]
         elif self.interval.direction == 'down':
-            self.range = [Note(self.nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(0, length * -1, -1)]
+            self.range = [Note(self._nt_from_int.get_note_from_interval(self.start.full_name, x, scale=(self.key, self.mode))) for x in range(0, length * -1, -1)]
 
     def _trim_ends(self):
         if self.interval.direction == 'up':
