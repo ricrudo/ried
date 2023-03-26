@@ -149,7 +149,7 @@ class Note(Duration):
                 return result
 
     def __add__(self, other):
-        if type(other) in (list, tuple):
+        if any([isinstance(other, x) for x in (list, tuple)]):
             if  len(other) == 2:
                 interval = other[0]
                 scale = other[1]
@@ -163,7 +163,7 @@ class Note(Duration):
                 interval = other.intervalNotation
             else:
                 interval = other
-            if self.key:
+            if self.key and isinstance(interval, int):
                 scale = (self.key, self.mode or 'ionian')
             else:
                 scale = None

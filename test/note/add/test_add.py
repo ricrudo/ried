@@ -18,5 +18,8 @@ def test_add(inputNote, number, response):
 
 def test_add_with_specific_key():
     note = Note('C3', key='Ab')
-    assert note.key == 'Ab'
-    assert note.mode == 'ionian'
+    assert (note + 1).full_name == 'Db3'
+
+def test_specific_case_1():
+    note = Note('Eb4', key='C', mode='dorian')
+    assert (note + '4p').full_name == 'Ab4'
