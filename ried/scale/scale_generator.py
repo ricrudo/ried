@@ -1,10 +1,8 @@
 from typing import Union
-
+from ried.scale.possible_modes import PossibleModes
 from ried.scale.scale_analysis import Scale_Analysis
 
 class Scale(Scale_Analysis):
-
-    posible_modes = {'ionian':700, 'dorian':701, 'phrygian':702, 'lydian':703, 'mixolydian':704, 'aeolian':705, 'locrian':706, 'melodic minor':701, 'harmonic minor':705, 'blues':604, 'major pentatonic':500, 'minor pentatonic':504, 'dominant bebop':804, 'minor bebop':801, 'major bebop':800}
 
     ionian_skeleton = 'n.n.nn.n.n.n'
     major_pentatonic_skeleton = 'n.n.n._n.n._'
@@ -40,9 +38,9 @@ class Scale(Scale_Analysis):
         '''
         Checks if mode name or int is within the options
         '''
-        if isinstance(mode, str) and mode.lower() not in self.posible_modes:
+        if isinstance(mode, str) and not getattr(PossibleModes, mode.replace(' ', '_'), None):
             raise ValueError(f'{mode} in not a valid mode')
-        if isinstance(mode, int) and mode not in self.posible_modes.values():
+        if isinstance(mode, int) and mode not in {x.value for x in PossibleModes}:
             raise ValueError(f'{mode} in not a valid mode')
 
     def _get_skeleton(self, mode:dict) -> list:

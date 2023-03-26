@@ -1,4 +1,5 @@
 from typing import Union
+from ried.scale.possible_modes import PossibleModes
 
 from ried.root.root_analysis import Root_Analysis
 
@@ -21,14 +22,13 @@ class Scale_Analysis(Root_Analysis):
         Returns a dict with two keys, modeName and modeNumebr
         '''
         self.check_mode(mode)
-        if type(mode) == str:
-            modeName = mode.lower()
-            modeNumber = self.posible_modes[mode]
+        if isinstance(mode, str):
+            modeName = mode.lower().replace(' ', '_')
+            modeNumber = PossibleModes[modeName].value
             return {'modeName': modeName, 'modeNumber': modeNumber}
-        if type(mode) == int:
-            modeNumber = int(mode)
-            modeName = [x for x in posible_modes.keys() if posible_modes[x] == mode][0]
-        return {'modeName': modeName, 'modeNumber': modeNumber}
+        if isinstance(mode, int):
+            modeName = PossibleModes(mode).name
+        return {'modeName': modeName, 'modeNumber': mode}
 
 
     def scale_from_list(self, scale):

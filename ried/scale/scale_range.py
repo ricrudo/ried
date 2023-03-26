@@ -1,12 +1,11 @@
 from ried.note.note_generator import Note
 from ried.scale.scale_generator import Scale
 from ried.interval.interval_generator import Note_from_interval, Interval
-
+from ried.scale.possible_modes import PossibleModes
 
 class ScaleRange:
 
     _symbols = 'ABCDEFG#b'
-    _posible_modes = Scale.posible_modes
     _nt_from_int = Note_from_interval()
 
     def __init__(self, start, end=None, length=None, key=None, mode=None):
@@ -52,7 +51,7 @@ class ScaleRange:
 
     def _check_mode(self, value):
         if value:
-            if value not in self._posible_modes:
+            if not getattr(PossibleModes, value.replace(' ', '_'), None):
                 raise ValueError(f'{value} is not a valid mode to create a range')
             return value
         if self.start.mode:

@@ -17,3 +17,12 @@ def test_range(start, end, response):
     result = "-".join([x.full_name for x in result])
     assert result == response
 
+def test_range_from_note_with_key_included():
+    note = Note('C3', key='Ab')
+    end = Note('C3')
+
+    sr = ScaleRange(end, length=2)
+    sr = ScaleRange(note, length=2)
+    assert sr.mode == 'ionian'
+    assert sr.key == 'Ab'
+    assert sr.end.full_name == 'Db3'

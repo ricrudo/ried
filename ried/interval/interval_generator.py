@@ -10,16 +10,17 @@ class Note_from_interval(Interval_Analysis, Scale):
         rules = self.get_interval_data(interval)
         start_point = self.analyze_root(original)
         if scale:
-            scale = self.get_property_scale(scale=scale)
+            if not isinstance(scale, dict):
+                scale = self.get_property_scale(scale=scale)
             reference = self.heptaphonic_natural_scale(start_point['root'], dots=False)
         else:
             reference = self.generate_scale(start_point, dots=False)
-        end = self.get_endpoint(type(interval), rules, reference, scale)
+        end = self.get_endpoint(interval, rules, reference, scale)
         end = self.fix_octave(start_point, end, rules)
         return end
 
-    def get_endpoint(self, typeSource, rules, reference, scale=None):
-        if typeSource == str or not scale:
+    def get_endpoint(self, interval, rules, reference, scale=None):
+        if isinstance(interval, str) or not scale:
             return self.chromatic_endpoint(rules, reference)
         return self.diatonic_endpoint(rules, reference, scale)
 
@@ -64,8 +65,8 @@ class Note_from_interval(Interval_Analysis, Scale):
             if not scale:
                 raise ValueError(f'root or scale must be specified')
             return self.scale_from_list(scale)
-        root = analyze_root(root)
-        mode = analyze_mode(mode)
+        root = self.analyze_root(root)
+        mode = self.analyze_mode(mode)
         return {'root': root, 'mode': mode}
 
     def fix_octave(self, start_point, end, rules):

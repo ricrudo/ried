@@ -1,5 +1,6 @@
 from ried.notation import notation_analyzer
 from ried.interval.interval_generator import Note_from_interval, Interval
+from ried.scale.possible_modes import PossibleModes
 
 from collections import namedtuple
 
@@ -162,7 +163,10 @@ class Note(Duration):
                 interval = other.intervalNotation
             else:
                 interval = other
-            scale = self.key
+            if self.key:
+                scale = (self.key, self.mode or 'ionian')
+            else:
+                scale = None
                                
         result = self.intrvl.get_note_from_interval(self.full_name, interval, scale=scale)
         return Note(result)
@@ -228,9 +232,21 @@ class Note(Duration):
         return False
         
     def _setKey(self, key):
-        return None
+        if not key: return None
+        if 'b' in key and '#' in key:
+            raise ValueError(f'{key} is not a valid root for a key.')
+        for x in key:
+            if x not in 'ABCDEFGb#':
+                raise ValueError(f'{key} is not a valid root for a key.')
+        return key
 
     def _setMode(self, mode):
+        if mode:
+            if not getattr(PossibleModes, mode.replace(' ', '_'), None):
+                raise ValueError(f'{mode} is not a valid root for a mode.')
+            return mode
+        if self.key:
+            return 'ionian'
         return None
 
     def _setChord(self, chord):

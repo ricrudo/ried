@@ -16,3 +16,7 @@ def test_add(inputNote, number, response):
     response = Note(response)
     assert note + int(number) == response
 
+def test_add_with_specific_key():
+    note = Note('C3', key='Ab')
+    assert note.key == 'Ab'
+    assert note.mode == 'ionian'
