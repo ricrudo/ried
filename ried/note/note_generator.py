@@ -148,6 +148,11 @@ class Note(Duration):
                 del cacheOther
                 return result
 
+    def __le__(self, other):
+        if self < other or self == other:
+            return True
+        return False
+
     def __add__(self, other):
         if any([isinstance(other, x) for x in (list, tuple)]):
             if  len(other) == 2:

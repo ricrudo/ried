@@ -267,3 +267,16 @@ def test_bar_6():
     assert compas.content[1].beam_direction == 'up'
     compas = Bar('2-4', content=['G4', 'E5'], subdivision='distribution', distribution=[[-1], [0.25, -0.5, 0.25]])
     assert compas.content[1].beam_direction == 'down'
+
+
+
+##############################
+
+
+def test_bar_7():
+    notes = [Note(x) for x in ('C3', 'E3', 'D2','C3', 'E3', 'D2')]
+    compas = Bar('6-8', content=notes, subdivision='distribution', distribution=[[1,1,1],[1,1,1]])
+    compas2 = Bar('6-8', content=[Note('C4'), Note('C4')], subdivision='distribution', distribution=[[1],[1]])
+    breakpoint()
+
+
