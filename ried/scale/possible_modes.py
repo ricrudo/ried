@@ -2,6 +2,7 @@ import enum
 
 class PossibleModes(enum.Enum):
     ionian = 700
+    major = 700
     dorian = 701
     phrygian = 702
     lydian = 703
