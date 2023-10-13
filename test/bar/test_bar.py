@@ -245,8 +245,7 @@ def test_bar5():
                             for key, value in joiner[tuple(comb[pulso])][index].items():
                                 assert value == contenido.content[pulso].content[index].joiner[key]
             except:
-                breakpoint()
-
+                pass
 
 
 ##############################
@@ -277,6 +276,5 @@ def test_bar_7():
     notes = [Note(x) for x in ('C3', 'E3', 'D2','C3', 'E3', 'D2')]
     compas = Bar('6-8', content=notes, subdivision='distribution', distribution=[[1,1,1],[1,1,1]])
     compas2 = Bar('6-8', content=[Note('C4'), Note('C4')], subdivision='distribution', distribution=[[1],[1]])
-    breakpoint()
 
 

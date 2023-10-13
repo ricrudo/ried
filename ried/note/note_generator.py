@@ -172,7 +172,7 @@ class Note(Duration):
                 scale = (self.key, self.mode or 'ionian')
             else:
                 scale = None
-                               
+
         result = self.intrvl.get_note_from_interval(self.full_name, interval, scale=scale)
         return Note(result)
 

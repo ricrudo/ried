@@ -1,7 +1,7 @@
 import setuptools
 
 setuptools.setup(name='ried',
-version='0.1.2.2',
+version='0.1.2.3',
 description='ried components',
 url='#',
 author='ricrudo',

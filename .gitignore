@@ -5,3 +5,5 @@
 /main_para_borrar.py
 /ried.egg-info/
 /test_in_jupyiter.ipynb
+/.pytest_cache/
+/venv/

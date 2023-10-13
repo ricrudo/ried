@@ -17,6 +17,15 @@ class Scale_Analysis(Root_Analysis):
         mode = self.analyze_mode(mode)
         return {'root': root, 'mode': mode}
 
+    def check_mode(self, mode:Union[str, int]):
+        '''
+        Checks if mode name or int is within the options
+        '''
+        if isinstance(mode, str) and not getattr(PossibleModes, mode.replace(' ', '_'), None):
+            raise ValueError(f'{mode} in not a valid mode')
+        if isinstance(mode, int) and mode not in {x.value for x in PossibleModes}:
+            raise ValueError(f'{mode} in not a valid mode')
+
     def analyze_mode(self, mode:Union[str, int]) -> dict:
         '''
         Returns a dict with two keys, modeName and modeNumebr

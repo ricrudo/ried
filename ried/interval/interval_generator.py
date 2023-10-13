@@ -6,25 +6,25 @@ from ried.interval.interval_analysis import Interval_Analysis
 
 class Note_from_interval(Interval_Analysis, Scale): 
 
-    def get_note_from_interval(self, original, interval, scale=None):
+    def get_note_from_interval(self, original, interval, scale=None, mode=None):
         rules = self.get_interval_data(interval)
         start_point = self.analyze_root(original)
         if scale:
             if not isinstance(scale, dict):
-                scale = self.get_property_scale(scale=scale)
-            reference = self.heptaphonic_natural_scale(start_point['root'], dots=False)
+                scale = self._get_property_scale(scale=scale)
+            reference = self.generate_scale(scale['root'], mode=scale['mode']['modeName'], dots=False)
         else:
             reference = self.generate_scale(start_point, dots=False)
-        end = self.get_endpoint(interval, rules, reference, scale)
-        end = self.fix_octave(start_point, end, rules)
+        end = self._get_endpoint(interval, rules, start_point, reference, scale)
+        end = self._fix_octave(start_point, end, rules)
         return end
 
-    def get_endpoint(self, interval, rules, reference, scale=None):
+    def _get_endpoint(self, interval, rules, start_point, reference, scale=None):
         if isinstance(interval, str) or not scale:
-            return self.chromatic_endpoint(rules, reference)
-        return self.diatonic_endpoint(rules, reference, scale)
+            return self._chromatic_endpoint(rules, reference)
+        return self._diatonic_endpoint(rules, start_point, reference, scale)
 
-    def chromatic_endpoint(self, rules: dict, reference: list) -> str:
+    def _chromatic_endpoint(self, rules: dict, reference: list) -> str:
         '''
         Return a chormatic endpoint interval
         rules keys: 'interval':int, 'octave':int, 'mod':int, 'direction':'up/down'
@@ -37,7 +37,7 @@ class Note_from_interval(Interval_Analysis, Scale):
         end = self.build_root_string(end)
         return end
 
-    def diatonic_endpoint(self, rules: dict, reference: list, scale: dict) -> str:
+    def _diatonic_endpoint(self, rules: dict, start_point:dict, reference: list, scale: dict) -> str:
         '''
         Return a diatonic endpoint interval 
         rules keys: 'interval':int, 'octave':int, 'mod':int, 'direction':'up/down'
@@ -45,22 +45,27 @@ class Note_from_interval(Interval_Analysis, Scale):
         scale keys: 'root': dict,  'mode': dict
         endpoint: i.e. 'Db'
         '''
-        ionian_root = self.get_ionian_root(scale)
-        ionian_root = self.analyze_root(ionian_root)
-        ionianScaleRef = self.generate_scale(ionian_root, dots=False)
-        target = reference[rules['interval']][0]
+        alter_symbol = 'b' if start_point['alter'] < 0 else '#'
+        alter = alter_symbol * abs(start_point['alter'])
+        start_index = reference.index(f'{start_point["root"]}{alter}')
+        end_index = start_index + rules['interval']
+        if end_index >= len(reference):
+            end_index -= len(reference)
+        return reference[end_index]
+
+        return reference[rules['interval']]
         end = [x for x in ionianScaleRef if target in x][0]
         return end
 
-    def get_ionian_root(self, scale):
+    def _get_ionian_root(self, scale):
         rootInterval = [None, '-2M', '-3M', '-4p', '-5p', '-6M', '-7M'][scale['mode']['modeNumber']%100]
         preRoot = self.build_root_string(scale['root'])
         if rootInterval:
-            return self.get_note_from_interval(preRoot, rootInterval)
+            return self.get_note_from_interval(preRoot, rootInterval, mode=scale['mode']['modeName'])
         else:
             return preRoot
 
-    def get_property_scale(self, root=None, mode='ionian', scale=None):
+    def _get_property_scale(self, root=None, mode='ionian', scale=None):
         if not root:
             if not scale:
                 raise ValueError(f'root or scale must be specified')
@@ -69,7 +74,7 @@ class Note_from_interval(Interval_Analysis, Scale):
         mode = self.analyze_mode(mode)
         return {'root': root, 'mode': mode}
 
-    def fix_octave(self, start_point, end, rules):
+    def _fix_octave(self, start_point, end, rules):
         if start_point['octave'] != None:
             finalOctave = start_point['octave'] + rules['octave']
             start_index = 'CDEFGAB'.index(start_point['root'])

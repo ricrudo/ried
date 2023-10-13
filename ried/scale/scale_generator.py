@@ -5,7 +5,7 @@ from ried.scale.scale_analysis import Scale_Analysis
 class Scale(Scale_Analysis):
 
     ionian_skeleton = 'n.n.nn.n.n.n'
-    major_pentatonic_skeleton = 'n.n.n._n.n._'
+    major_pentatonic_skeleton = 'n.n.n_.n.n._'
 
     def generate_scale(self, root:Union[dict, str], mode:Union[str,int]='ionian', dots:bool=True) -> list:
         '''
@@ -18,7 +18,7 @@ class Scale(Scale_Analysis):
         hepta_naturalScale = self.heptaphonic_natural_scale(root['root'])
         skeleton = self._get_skeleton(mode)
         rootNatural_Scale = self._get_naturalRoot_scale(hepta_naturalScale, skeleton)
-        realScale = self.add_alterarions(root['alter'], rootNatural_Scale, mode)
+        realScale = self._add_alterarions(root['alter'], rootNatural_Scale, mode)
         return realScale
 
     def heptaphonic_natural_scale(self, root:str, dots:bool=True) -> Union[str, list]:
@@ -33,15 +33,6 @@ class Scale(Scale_Analysis):
         if dots:
             return heptaScale
         return list(heptaScale.replace('.', ''))
-
-    def check_mode(self, mode:Union[str, int]):
-        '''
-        Checks if mode name or int is within the options
-        '''
-        if isinstance(mode, str) and not getattr(PossibleModes, mode.replace(' ', '_'), None):
-            raise ValueError(f'{mode} in not a valid mode')
-        if isinstance(mode, int) and mode not in {x.value for x in PossibleModes}:
-            raise ValueError(f'{mode} in not a valid mode')
 
     def _get_skeleton(self, mode:dict) -> list:
         '''
@@ -94,7 +85,7 @@ class Scale(Scale_Analysis):
                     alter_cache.append(1)
         return natural_root_scale
        
-    def add_alterarions(self, alter, naturalScale, mode):
+    def _add_alterarions(self, alter, naturalScale, mode):
         for i, note in enumerate(naturalScale):
             if note == '.':
                 continue
@@ -103,7 +94,7 @@ class Scale(Scale_Analysis):
             mod += note.count('#')
             mod = mod > 0 and '#' * mod or mod < 0 and 'b' * abs(mod) or ''
             naturalScale[i] = note[0] + mod
-            if i == 6 and mode['modeName'] in ['melodic minor', 'harmonic minor']:
+            if i == 6 and mode['modeName'] in ['melodic_minor', 'harmonic_minor']:
                 flats = naturalScale[i].count('b')
                 if flats:
                     naturalScale[i] = naturalScale[i][:-1]
