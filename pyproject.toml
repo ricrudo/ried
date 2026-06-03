@@ -1,0 +1,17 @@
+# ried/pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ried"
+version = "0.1.2.3"
+description = "ried components"
+authors = [{ name = "ricrudo", email = "ricardood@gmail.com" }]
+requires-python = ">=3.9"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]

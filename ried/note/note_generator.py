@@ -3,6 +3,8 @@ from ried.interval.interval_generator import Note_from_interval, Interval
 from ried.scale.possible_modes import PossibleModes
 
 from collections import namedtuple
+from weakref import WeakValueDictionary
+from typing import Optional
 
 class Duration:
 
@@ -70,8 +72,44 @@ class Note(Duration):
     nttnAnlzr = notation_analyzer.Note()
     intrvl = Note_from_interval()
     Beat_Position = namedtuple('BeatPosition', 'j8ths j16ths j32nds j64ths')
+    #_abstract_notes: "WeakValueDictionary[str, Note]" = WeakValueDictionary()
+    _abstract_notes = {}
 
-    def __init__(self, name, octave='none', alter='none', duration=None, dots=None, joiner_pos=None, key=None, mode=None, chord=None, centralLine=None):
+    def __new__(cls,
+                    name: str,
+                    octave: Optional[int] = None,
+                    alter: Optional[str] = None,
+                    duration: Optional[int] = None,
+                    dots: Optional[int] = None,
+                    joiner_pos=None,
+                    key=None,
+                    mode=None,
+                    chord=None,
+                    centralLine=None):
+
+        if (octave is None and alter is None
+                and duration is None and dots is None 
+                and joiner_pos is None and key is None 
+                and mode is None and chord is None
+                and centralLine is None):
+            if  name not in cls._abstract_notes:
+                cls._abstract_notes[name] = super().__new__(cls)
+            return cls._abstract_notes.get(name)
+        return super().__new__(cls)
+
+    def __init__(self,
+                    name: str,
+                    octave: Optional[int] = None,
+                    alter: Optional[str] = None,
+                    duration: Optional[int] = None,
+                    dots: Optional[int] = None,
+                    joiner_pos=None,
+                    key=None,
+                    mode=None,
+                    chord=None,
+                    centralLine=None):
+        if getattr(self, "_initialized", False):
+            return
         predata = self.nttnAnlzr.generator_note(name, octave, alter)
         self.name = predata['name']
         self.name_without_alter = predata['name_without_alter']
@@ -91,6 +129,7 @@ class Note(Duration):
         self.chord = self._setChord(chord)
         self.pos = self._set_line_pos(centralLine)
         self.aditional_line = self._set_additional_line()
+        self._initialized = True
 
     def __repr__(self):
         if not self.duration:
@@ -101,8 +140,8 @@ class Note(Duration):
         return 'none'
 
     def __eq__(self, other):
-        if self.octave != 'none':
-            if other.octave != 'none':
+        if self.octave is not None:
+            if other.octave is not None:
                 if self.midi_number == other.midi_number: return True
                 else: return False
             else:
@@ -111,7 +150,7 @@ class Note(Duration):
                 del cache
                 return result
         else:
-            if other.octave != 'none':
+            if other.octave is not None:
                 cache = Note(self.full_name + str(other.octave))
                 result = cache.midi_number == other.midi_number
                 del cache
@@ -125,8 +164,8 @@ class Note(Duration):
                 return result
 
     def __lt__(self, other):
-        if self.octave != 'none':
-            if other.octave != 'none':
+        if self.octave is not None:
+            if other.octave is not None:
                 if self.midi_number < other.midi_number: return True
                 else: return False
             else:
@@ -135,7 +174,7 @@ class Note(Duration):
                 del cache
                 return result
         else:
-            if other.octave != 'none':
+            if other.octave is not None:
                 cache = Note(self.full_name + str(other.octave))
                 result = cache.midi_number < other.midi_number
                 del cache
@@ -267,7 +306,7 @@ class Note(Duration):
 
     def _set_line_pos(self, centralLine):
         if centralLine and isinstance(centralLine, Note):
-            if self.octave != 'none':
+            if self.octave is not None:
                 distance = centralLine ^ self
                 distance = (distance.octaves * 7) + distance.steps
                 return distance

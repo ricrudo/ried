@@ -4,7 +4,7 @@ from collections import namedtuple
 from ried.scale.scale_generator import Scale
 from ried.interval.interval_analysis import Interval_Analysis
 
-class Note_from_interval(Interval_Analysis, Scale): 
+class Note_from_interval(Interval_Analysis, Scale):
 
     def get_note_from_interval(self, original, interval, scale=None, mode=None):
         rules = self.get_interval_data(interval)
@@ -158,7 +158,7 @@ class Interval(Scale):
         '''
         determines the direction od the interval
         '''
-        if any([x.octave == 'none' for x in (start, end)]):
+        if any([x.octave is None for x in (start, end)]):
             predata['octave'] = 0
             predata['direction'] = 'up'
             return
